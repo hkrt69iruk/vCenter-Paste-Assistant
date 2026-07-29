@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>vCenter Paste Assistant</title>
+    <style>
+      /* Match WebMKS panel theme (vcenter-paste-console.js theme) */
+      :root {
+        color-scheme: dark;
+        --vcpa-bg: #141414;
+        --vcpa-bgPanel: #1a1a1a;
+        --vcpa-border: #2a2a2a;
+        --vcpa-text: #fff;
+        --vcpa-textMuted: #8a8a8a;
+        --vcpa-accent: #f60;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        background: var(--vcpa-bgPanel);
+        color: var(--vcpa-text);
+        width: 380px;
+        min-height: 400px;
+        max-height: 520px;
+        display: flex;
+        flex-direction: column;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Tab header (like #vcpa-header) */
+      .vcpa-header {
+        display: flex;
+        align-items: stretch;
+        background: var(--vcpa-bg);
+        border-bottom: 1px solid var(--vcpa-border);
+        border-radius: 6px 6px 0 0;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+      .vcpa-tabs { display: flex; align-items: stretch; flex: 1; }
+      .vcpa-tab {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 13px 10px 11px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--vcpa-textMuted);
+        cursor: pointer;
+        transition: color 0.15s, border-color 0.15s;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .vcpa-tab + .vcpa-tab { border-left: 1px solid var(--vcpa-border); }
+      .vcpa-tab:hover { color: var(--vcpa-textMuted); }
+      .vcpa-tab.active { color: var(--vcpa-text); border-bottom-color: var(--vcpa-accent); }
+
+      /* Views */
+      .vcpa-view {
+        display: none;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+      }
+      .vcpa-view.active { display: flex; }
+
+      /* Paste view – textarea fills remaining space */
+      .vcpa-paste-view #vcpa-textarea {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        resize: none;
+        font-family: inherit;
+        font-size: 12px;
+        color: var(--vcpa-textMuted);
+        padding: 11px 12px;
+        display: block;
+        caret-color: var(--vcpa-accent);
+      }
+      .vcpa-paste-view #vcpa-textarea::placeholder { color: var(--vcpa-textMuted); }
+
+      /* Shared footer bar (Paste and Snippets tabs) */
+      .vcpa-footer,
+      .vcpa-snip-footer {
+        padding: 10px 12px;
+        border-top: 1px solid var(--vcpa-border);
+        background: var(--vcpa-bg);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .vcpa-footer-btns { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+      .vcpa-footer-spacer { flex: 1; min-width: 0; }
+
+      .vcpa-save-snip-btn {
+        background: transparent;
+        border: 1px solid var(--vcpa-border);
+        border-radius: 4px;
+        color: var(--vcpa-textMuted);
+        font-family: inherit;
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        padding: 5px 10px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: border-color 0.12s, color 0.12s;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .vcpa-save-snip-btn:hover { border-color: var(--vcpa-accent); color: var(--vcpa-accent); }
+
+      .vcpa-send {
+        background: var(--vcpa-accent);
+        color: var(--vcpa-text);
+        border: none;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        padding: 5px 12px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.12s;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .vcpa-send:hover { opacity: 0.9; }
+
+      .vcpa-clear-btn {
+        background: transparent;
+        border: 1px solid var(--vcpa-border);
+        border-radius: 4px;
+        color: var(--vcpa-textMuted);
+        font-family: inherit;
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        padding: 5px 10px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: border-color 0.12s, color 0.12s;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .vcpa-clear-btn:hover { border-color: var(--vcpa-accent); color: var(--vcpa-accent); }
+
+      .vcpa-paste-hint {
+        font-size: 9px;
+        color: var(--vcpa-textMuted);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Snippets view */
+      .vcpa-snip-scroll {
+        max-height: 220px;
+        overflow-y: auto;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        min-height: 0;
+      }
+      .vcpa-snip-scroll::-webkit-scrollbar { width: 4px; }
+      .vcpa-snip-scroll::-webkit-scrollbar-thumb { background: var(--vcpa-border); border-radius: 2px; }
+
+      .vcpa-snip-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 4px;
+        border: 1px solid var(--vcpa-border);
+        background: var(--vcpa-bg);
+        transition: border-color 0.12s, background 0.12s;
+      }
+      .vcpa-snip-row:hover { border-color: var(--vcpa-border); background: var(--vcpa-bgPanel); }
+      .vcpa-snip-row.dragging { opacity: 0.5; }
+      .vcpa-snip-row.drag-over { border-color: var(--vcpa-accent); background: var(--vcpa-bgPanel); }
+      .vcpa-snip-row .vcpa-snip-drag-handle {
+        cursor: grab;
+        color: var(--vcpa-textMuted);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+      }
+      .vcpa-snip-row .vcpa-snip-drag-handle:active { cursor: grabbing; }
+
+      .vcpa-snip-info { flex: 1; min-width: 0; }
+      .vcpa-snip-name {
+        font-size: 10px;
+        color: var(--vcpa-accent);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .vcpa-snip-preview {
+        font-size: 10px;
+        color: var(--vcpa-textMuted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .vcpa-snip-actions {
+        flex-shrink: 0;
+        width: max-content;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .vcpa-snip-actions-extra {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.12s;
+      }
+      .vcpa-snip-row:hover .vcpa-snip-actions-extra,
+      .vcpa-snip-row.active .vcpa-snip-actions-extra {
+        opacity: 1;
+      }
+      .vcpa-snip-actions button {
+        height: 24px;
+        min-height: 24px;
+        box-sizing: border-box;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: inherit;
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .vcpa-snip-send {
+        background: var(--vcpa-accent);
+        border: none;
+        border-radius: 4px;
+        color: var(--vcpa-text);
+        font-size: 9px;
+        padding: 0 9px;
+      }
+      .vcpa-snip-edit {
+        background: transparent;
+        border: 1px solid var(--vcpa-border);
+        border-radius: 3px;
+        color: var(--vcpa-textMuted);
+        padding: 0;
+        width: 24px;
+        min-width: 24px;
+        transition: border-color 0.12s, color 0.12s;
+      }
+      .vcpa-snip-edit svg { width: 9px; height: 9px; }
+      .vcpa-snip-edit:hover,
+      .vcpa-snip-edit.active { border-color: var(--vcpa-accent); color: var(--vcpa-accent); }
+      .vcpa-snip-del {
+        background: transparent;
+        border: none;
+        color: var(--vcpa-textMuted);
+        font-size: 14px;
+        line-height: 1;
+        padding: 0;
+        width: 28px;
+        min-width: 28px;
+        transition: color 0.12s;
+      }
+      .vcpa-snip-del:hover { color: var(--vcpa-accent); }
+
+      .vcpa-snip-empty {
+        padding: 24px 12px;
+        text-align: center;
+        font-size: 10px;
+        color: var(--vcpa-textMuted);
+        line-height: 1.7;
+      }
+
+      .vcpa-snip-hint { font-size: 9px; color: var(--vcpa-textMuted); letter-spacing: 0.08em; }
+      .vcpa-snip-new-btn {
+        background: var(--vcpa-accent);
+        color: var(--vcpa-text);
+        border: none;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        padding: 5px 12px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.12s, opacity 0.12s;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .vcpa-snip-new-btn:hover { opacity: 0.9; }
+      .vcpa-snip-footer-btn-secondary {
+        background: transparent;
+        border: 1px solid var(--vcpa-border);
+        color: var(--vcpa-textMuted);
+        font-size: 10px;
+        padding: 5px 10px;
+      }
+      .vcpa-snip-footer-btn-secondary:hover { border-color: var(--vcpa-accent); color: var(--vcpa-accent); }
+      .vcpa-snip-footer-links {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 10px;
+      }
+      .vcpa-snip-footer-links a {
+        color: var(--vcpa-textMuted);
+        text-decoration: none;
+      }
+      .vcpa-snip-footer-links a:hover { color: var(--vcpa-accent); }
+
+      /* Add/Edit form */
+      .vcpa-snippet-form {
+        padding: 10px;
+        margin: 0 8px 8px;
+        background: var(--vcpa-bg);
+        border: 1px solid var(--vcpa-border);
+        border-radius: 4px;
+        display: none;
+      }
+      .vcpa-snippet-form.open { display: block; }
+      .vcpa-snippet-form .form-row { margin-bottom: 8px; }
+      .vcpa-snippet-form .form-row:last-of-type { margin-bottom: 10px; }
+      .vcpa-snippet-form label {
+        display: block;
+        font-size: 9px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--vcpa-textMuted);
+        margin-bottom: 4px;
+      }
+      .vcpa-snippet-form input,
+      .vcpa-snippet-form textarea {
+        width: 100%;
+        padding: 6px 8px;
+        font-size: 11px;
+        font-family: inherit;
+        background: var(--vcpa-bgPanel);
+        border: 1px solid var(--vcpa-border);
+        border-radius: 4px;
+        color: var(--vcpa-text);
+      }
+      .vcpa-snippet-form textarea {
+        min-height: 56px;
+        resize: vertical;
+      }
+      .vcpa-snippet-form .form-actions { display: flex; gap: 6px; justify-content: flex-end; }
+      .vcpa-snippet-form .form-actions button {
+        padding: 5px 10px;
+        font-size: 9px;
+        font-family: inherit;
+        border-radius: 4px;
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .vcpa-snippet-form .form-actions .save {
+        background: var(--vcpa-accent);
+        color: var(--vcpa-text);
+        border: none;
+      }
+      .vcpa-snippet-form .form-actions .cancel {
+        background: transparent;
+        color: var(--vcpa-textMuted);
+        border: 1px solid var(--vcpa-border);
+      }
+
+      /* Popup footer (version + links) */
+      .popup-footer {
+        padding: 8px 12px;
+        border-top: 1px solid var(--vcpa-border);
+        font-size: 9px;
+        color: var(--vcpa-textMuted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .popup-footer a {
+        color: var(--vcpa-textMuted);
+        text-decoration: none;
+      }
+      .popup-footer a:hover { color: var(--vcpa-accent); }
+
+      /* Command palette header */
+      .cp-title-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        padding: 12px 14px 10px;
+        border-bottom: 1px solid var(--vcpa-border);
+        flex-shrink: 0;
+      }
+      .cp-settings-btn {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        border-radius: 4px;
+        color: var(--vcpa-textMuted);
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+        transition: color 0.15s, background 0.15s;
+      }
+      .cp-settings-btn:hover {
+        color: var(--vcpa-accent);
+        background: var(--vcpa-bg);
+      }
+      .cp-settings-btn svg { width: 16px; height: 16px; display: block; }
+      .cp-title {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--vcpa-textMuted);
+      }
+      .cp-search-wrap {
+        padding: 8px 12px 6px;
+        border-bottom: 1px solid var(--vcpa-border);
+        flex-shrink: 0;
+      }
+      .cp-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: var(--vcpa-bg);
+        border: 1px solid var(--vcpa-border);
+        border-radius: 4px;
+      }
+      .cp-search:focus-within { border-color: var(--vcpa-accent); outline: none; }
+      .cp-search-icon {
+        flex-shrink: 0;
+        color: var(--vcpa-textMuted);
+      }
+      .cp-search-icon svg { width: 14px; height: 14px; display: block; }
+      .cp-search input {
+        flex: 1;
+        min-width: 0;
+        background: none;
+        border: none;
+        outline: none;
+        font-family: inherit;
+        font-size: 12px;
+        color: var(--vcpa-text);
+      }
+      .cp-search input::placeholder { color: var(--vcpa-textMuted); }
+
+      /* Tabs below search */
+      .vcpa-header { border-radius: 0; }
+      .vcpa-tab { padding: 10px 12px; }
+
+      /* Snippet row: same as WebMKS panel */
+      .vcpa-snip-row {
+        padding: 8px 10px;
+        gap: 8px;
+        border-radius: 4px;
+        border: 1px solid var(--vcpa-border);
+      }
+      .vcpa-snip-row:hover,
+      .vcpa-snip-row.active {
+        background: var(--vcpa-bgPanel);
+      }
+      .vcpa-snip-row.drag-over { border-color: var(--vcpa-accent); background: var(--vcpa-bgPanel); }
+      .vcpa-snip-send { font-size: 9px; font-weight: 600; letter-spacing: 0.06em; padding: 0 9px; }
+
+      .vcpa-snip-footer-left {
+        font-size: 9px;
+        color: var(--vcpa-textMuted);
+        letter-spacing: 0.06em;
+      }
+      .vcpa-snip-footer-left a { color: var(--vcpa-textMuted); text-decoration: none; }
+      .vcpa-snip-footer-left a:hover { color: var(--vcpa-accent); }
+    </style>
+
+    <style id="vcs-modern-popup">
+      :root{--vcpa-bg:#0b1020;--vcpa-bgPanel:#111827;--vcpa-border:#26334d;--vcpa-text:#f8fafc;--vcpa-textMuted:#94a3b8;--vcpa-accent:#3b82f6}
+      body{width:400px;min-height:430px;background:radial-gradient(circle at 100% 0,rgba(59,130,246,.12),transparent 35%),#0b1020;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+      .vcpa-header{padding:7px;background:rgba(2,6,23,.42);border-bottom-color:rgba(148,163,184,.14)}.vcpa-tabs{gap:7px}.vcpa-tab{border:0!important;border-radius:10px;margin:0;padding:10px;text-transform:none;letter-spacing:0;font-size:12px}.vcpa-tab:hover{background:rgba(148,163,184,.08);color:#e2e8f0}.vcpa-tab.active{background:rgba(59,130,246,.18);color:#fff;border:0}
+      .vcpa-paste-view #vcpa-textarea{margin:12px;width:calc(100% - 24px);border:1px solid rgba(148,163,184,.18);border-radius:13px;background:rgba(2,6,23,.42);padding:14px;color:#e2e8f0;line-height:1.6}.vcpa-paste-view #vcpa-textarea:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+      .vcpa-footer,.vcpa-snip-footer{background:rgba(2,6,23,.42);border-color:rgba(148,163,184,.14);padding:11px 12px}.vcpa-send,.vcpa-snip-new-btn,.vcpa-snip-send{background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:9px;box-shadow:0 6px 16px rgba(37,99,235,.22)}.vcpa-save-snip-btn,.vcpa-clear-btn,.vcpa-snip-edit{border-radius:9px;background:rgba(148,163,184,.06);border-color:rgba(148,163,184,.2)}
+      .vcpa-snip-scroll{padding:10px;gap:7px}.vcpa-snip-row{border-radius:12px;padding:10px 11px;background:rgba(30,41,59,.55);border-color:rgba(148,163,184,.15)}.vcpa-snip-row:hover{border-color:rgba(96,165,250,.42);background:rgba(30,41,59,.8)}.vcpa-snip-name{color:#93c5fd;text-transform:none;letter-spacing:0;font-size:12px}.vcpa-snippet-form{border-radius:13px;background:rgba(15,23,42,.94);border-color:rgba(96,165,250,.3)}.vcpa-snippet-form input,.vcpa-snippet-form textarea,.cp-search-input{border-radius:9px!important;background:rgba(2,6,23,.45)!important;border-color:rgba(148,163,184,.2)!important}
+    </style>
+</head>
+  <body>
+    <div class="cp-title-bar">
+      <span class="cp-title">vCenter Paste Assistant</span>
+      <a href="#" id="cp-settings-btn" class="cp-settings-btn" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+    </div>
+    <header class="vcpa-header">
+      <div class="vcpa-tabs">
+        <button type="button" class="vcpa-tab active" id="tab-paste" data-tab="paste">Paste</button>
+        <button type="button" class="vcpa-tab" id="tab-snippets" data-tab="snippets">Snippets</button>
+      </div>
+    </header>
+
+    <div id="view-paste" class="vcpa-view active vcpa-paste-view">
+      <textarea id="vcpa-textarea" placeholder="Type or paste text, then click Send…" rows="5"></textarea>
+      <div class="vcpa-footer">
+        <span class="vcpa-paste-hint" id="popup-paste-hint"></span>
+        <div class="vcpa-footer-btns">
+          <button type="button" class="vcpa-clear-btn" id="popup-clear-btn">Clear</button>
+          <button type="button" class="vcpa-save-snip-btn" id="popup-save-as-snippet-btn">Save as snippet</button>
+          <button type="button" class="vcpa-send" id="popup-send-btn">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-snippets" class="vcpa-view">
+      <div class="cp-search-wrap" id="cp-search-wrap">
+        <div class="cp-search">
+          <span class="cp-search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </span>
+          <input type="text" id="cp-search-input" placeholder="Search snippets..." autocomplete="off" />
+        </div>
+      </div>
+      <div id="popup-snippet-list" class="vcpa-snip-scroll" aria-label="Snippet list"></div>
+      <div id="popup-snippet-form" class="vcpa-snippet-form">
+        <div class="form-row">
+          <label for="popup-snippet-name">Name</label>
+          <input type="text" id="popup-snippet-name" placeholder="Snippet name" />
+        </div>
+        <div class="form-row">
+          <label for="popup-snippet-text">Content</label>
+          <textarea id="popup-snippet-text" placeholder="Paste or type content…"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="cancel" id="popup-snippet-form-cancel">Cancel</button>
+          <button type="button" class="save" id="popup-snippet-form-save">Save</button>
+        </div>
+      </div>
+      <div class="vcpa-snip-footer">
+        <span class="vcpa-snip-hint">Drag to reorder snippets</span>
+        <span class="vcpa-footer-spacer"></span>
+        <button type="button" class="vcpa-snip-new-btn" id="popup-new-snippet-btn">+ New snippet</button>
+      </div>
+    </div>
+
+    <footer class="popup-footer">
+      <span id="version-label"></span>
+      <a href="https://github.com/hkrt69iruk/vCenter-Paste-Assistant" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/hkrt69iruk/vCenter-Paste-Assistant/blob/main/docs/PRIVACY_POLICY.md" target="_blank" rel="noopener noreferrer">Privacy</a>
+    </footer>
+
+    <script src="vcenter-paste-i18n.js"></script>
+    <script src="vcenter-paste-popup.js"></script>
+  </body>
+</html>

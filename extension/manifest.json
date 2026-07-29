@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "name": "vCenter 粘贴工具（vCenter Paste Assistant）",
+  "version": "1.0.0",
+  "description": "将文本和常用片段输入 VMware vCenter/ESXi WebMKS 控制台。Paste text and saved snippets into VMware WebMKS consoles.",
+  "permissions": [
+    "clipboardRead",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "vcenter-paste-assistant@hkrt69iruk.github.io",
+      "strict_min_version": "109.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "vcenter-paste-i18n.js",
+        "vcenter-paste-console.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
+    }
+  ],
+  "icons": {
+    "16": "icons/vcenter-paste-16.png",
+    "48": "icons/vcenter-paste-48.png",
+    "128": "icons/vcenter-paste-128.png"
+  },
+  "action": {
+    "default_title": "vCenter 粘贴工具",
+    "default_icon": {
+      "16": "icons/vcenter-paste-16.png",
+      "48": "icons/vcenter-paste-48.png",
+      "128": "icons/vcenter-paste-128.png"
+    },
+    "default_popup": "vcenter-paste-popup.html"
+  },
+  "options_ui": {
+    "page": "vcenter-paste-options.html",
+    "open_in_tab": true
+  }
+}
