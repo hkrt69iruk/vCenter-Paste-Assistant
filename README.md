@@ -31,11 +31,9 @@
 
 ![常用片段界面](assets/screenshots/3.png)
 
-### 扩展弹窗
-
-![扩展弹窗](assets/screenshots/4.png)
-
 ### 扩展设置
+
+![扩展设置](assets/screenshots/4.png)
 
 ![扩展设置](assets/screenshots/5.png)
 
