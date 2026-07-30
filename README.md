@@ -17,6 +17,28 @@
 - 默认简体中文，可在扩展程序选项中切换为 English
 - 剪贴板、片段及设置仅在浏览器本地处理
 
+## 界面预览
+
+### WebMKS 浮动粘贴窗口
+
+![WebMKS 浮动粘贴窗口](assets/screenshots/1.png)
+
+### 文本粘贴
+
+![文本粘贴界面](assets/screenshots/2.png)
+
+### 常用片段
+
+![常用片段界面](assets/screenshots/3.png)
+
+### 扩展弹窗
+
+![扩展弹窗](assets/screenshots/4.png)
+
+### 扩展设置
+
+![扩展设置](assets/screenshots/5.png)
+
 ## 已验证
 
 ### VMware 环境

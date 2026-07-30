@@ -16,6 +16,28 @@
 - Simplified Chinese by default, switchable to English in Extension options
 - Clipboard text, snippets, and settings are processed locally
 
+## Screenshots
+
+### WebMKS floating paste panel
+
+![WebMKS floating paste panel](assets/screenshots/1.png)
+
+### Paste text
+
+![Paste text interface](assets/screenshots/2.png)
+
+### Reusable snippets
+
+![Reusable snippets interface](assets/screenshots/3.png)
+
+### Extension popup
+
+![Extension popup](assets/screenshots/4.png)
+
+### Extension options
+
+![Extension options](assets/screenshots/5.png)
+
 ## Verified scenarios
 
 ### VMware environments
