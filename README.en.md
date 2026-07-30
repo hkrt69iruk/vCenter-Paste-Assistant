@@ -30,12 +30,9 @@
 
 ![Reusable snippets interface](assets/screenshots/3.png)
 
-### Extension popup
-
-![Extension popup](assets/screenshots/4.png)
-
 ### Extension options
 
+![Extension options](assets/screenshots/4.png)
 ![Extension options](assets/screenshots/5.png)
 
 ## Verified scenarios
