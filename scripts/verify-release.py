@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 EXTENSION = ROOT / "extension"
 MANIFEST_PATH = EXTENSION / "manifest.json"
-ZIP_PATH = ROOT / "vcenter-paste-assistant-v1.0.0.zip"
+ZIP_PATH = ROOT / "vcenter-paste-assistant-v1.0.1.zip"
 THIS_SCRIPT = Path(__file__).resolve()
 
 LEGACY_BRANDING_TERMS = (
@@ -33,7 +33,7 @@ STALE_REPOSITORY_URL = re.compile(
     re.IGNORECASE,
 )
 TEXT_SUFFIXES = {".html", ".js", ".json", ".md", ".py", ".svg", ".txt"}
-RELEASE_VERSION = "1.0.0"
+RELEASE_VERSION = "1.0.1"
 DEBUG_OUTPUT = re.compile(r"console\.(?:log|debug|warn)\s*\(")
 
 

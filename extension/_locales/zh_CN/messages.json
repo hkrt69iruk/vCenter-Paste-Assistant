@@ -1,0 +1,11 @@
+{
+  "extensionName": {
+    "message": "vCenter 粘贴工具"
+  },
+  "extensionDescription": {
+    "message": "为 VMware vCenter 和 ESXi WebMKS 控制台提供文本粘贴及常用片段功能。"
+  },
+  "extensionActionTitle": {
+    "message": "vCenter 粘贴工具"
+  }
+}

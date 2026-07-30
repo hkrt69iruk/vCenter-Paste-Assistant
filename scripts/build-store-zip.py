@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EXTENSION_DIR = ROOT / "extension"
-ZIP_PATH = ROOT / "vcenter-paste-assistant-v1.0.0.zip"
+ZIP_PATH = ROOT / "vcenter-paste-assistant-v1.0.1.zip"
 
 
 def main():

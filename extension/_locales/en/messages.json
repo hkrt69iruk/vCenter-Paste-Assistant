@@ -1,0 +1,11 @@
+{
+  "extensionName": {
+    "message": "vCenter Paste Assistant"
+  },
+  "extensionDescription": {
+    "message": "Paste text and reusable snippets into VMware vCenter and ESXi WebMKS consoles."
+  },
+  "extensionActionTitle": {
+    "message": "vCenter Paste Assistant"
+  }
+}
